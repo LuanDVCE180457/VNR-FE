@@ -15,8 +15,11 @@
   let filterState = 'all'; // 'all' | 'unanswered' | 'wrong' | 'correct' | 'starred'
   let searchQuery = '';
 
+  // Pending selections for multi-select questions before confirmation
+  let pendingSelections = {}; // { qId: ['A', 'D'] }
+
   let userState = {
-    answers: {},       // { qId: selectedOptionLabel }
+    answers: {},       // { qId: selectedOptionLabel (or array for multi) }
     bookmarks: [],     // [ qId ]
     streak: 0,
     maxStreak: 0,
@@ -232,6 +235,18 @@
     showToast(userState.sound ? 'Đã bật âm thanh' : 'Đã tắt âm thanh');
   }
 
+  // Check if user answer matches target answer list
+  function isAnswerCorrect(q, userAns) {
+    if (!userAns) return false;
+    const userList = Array.isArray(userAns) ? userAns : [userAns];
+    const targetList = q.answer;
+
+    if (userList.length !== targetList.length) return false;
+    const sortedUser = [...userList].sort().join(',');
+    const sortedTarget = [...targetList].sort().join(',');
+    return sortedUser === sortedTarget;
+  }
+
   // Filtered Questions Helper
   function getFilteredQuestions() {
     return questions.filter((q) => {
@@ -245,7 +260,7 @@
 
       // 2. Status Filter
       const userAns = userState.answers[q.id];
-      const isCorrect = userAns && q.answer.includes(userAns);
+      const isCorrect = isAnswerCorrect(q, userAns);
       const isWrong = userAns && !isCorrect;
       const isStarred = userState.bookmarks.includes(q.id);
 
@@ -268,7 +283,7 @@
       const qId = parseInt(qIdStr);
       const q = questions.find((item) => item.id === qId);
       if (q) {
-        if (q.answer.includes(userState.answers[qId])) {
+        if (isAnswerCorrect(q, userState.answers[qId])) {
           correct++;
         } else {
           wrong++;
@@ -312,7 +327,6 @@
 
   // Jump to specific Question ID in Practice Mode
   function jumpToQuestionId(qId) {
-    // Reset filters if needed so question is visible
     filterState = 'all';
     searchQuery = '';
     DOM.searchBox.value = '';
@@ -346,9 +360,16 @@
     }
 
     const q = filteredList[currentIndex];
+    const isMulti = q.answer.length > 1;
 
     // Header & Badge
-    DOM.qCardBadge.textContent = `Câu ${q.id} / ${questions.length} (Danh sách lọc: ${currentIndex + 1}/${filteredList.length})`;
+    let badgeHTML = `Câu ${q.id} / ${questions.length}`;
+    if (isMulti) {
+      badgeHTML += ` <span style="background: var(--warning-bg); color: var(--warning); border: 1px solid var(--warning); padding: 2px 10px; border-radius: var(--radius-full); font-size: 12px; margin-left: 8px;">
+        <i class="fa-solid fa-list-check"></i> CHỌN ${q.answer.length} ĐÁP ÁN ĐÚNG
+      </span>`;
+    }
+    DOM.qCardBadge.innerHTML = badgeHTML;
     
     // Bookmark status
     const isBookmarked = userState.bookmarks.includes(q.id);
@@ -363,6 +384,12 @@
     // User previous answer
     const userAns = userState.answers[q.id];
     const isAnswered = !!userAns;
+
+    // Current pending selection for multi-select
+    if (!pendingSelections[q.id]) {
+      pendingSelections[q.id] = [];
+    }
+    const currentPending = pendingSelections[q.id];
 
     // Options List
     DOM.optionsList.innerHTML = '';
@@ -383,8 +410,9 @@
 
       if (isAnswered) {
         btn.classList.add('disabled');
+        const userList = Array.isArray(userAns) ? userAns : [userAns];
         const isTrueCorrect = q.answer.includes(opt.label);
-        const isUserSelected = userAns === opt.label;
+        const isUserSelected = userList.includes(opt.label);
 
         if (isUserSelected && isTrueCorrect) {
           btn.classList.add('selected-correct');
@@ -397,15 +425,43 @@
           textSpan.innerHTML += ' <i class="fa-solid fa-check" style="margin-left: 8px; color: #10b981;"></i> (Đáp án đúng)';
         }
       } else {
-        btn.addEventListener('click', () => handleOptionSelect(q, opt.label));
+        // Multi-select pending selection state (distinct purple/indigo style, NOT green!)
+        if (isMulti) {
+          const isPending = currentPending.includes(opt.label);
+          if (isPending) {
+            btn.classList.add('selected-pending');
+            textSpan.innerHTML += ' <i class="fa-solid fa-check" style="margin-left: 8px; color: var(--accent-primary);"></i>';
+          }
+          btn.addEventListener('click', () => handleMultiOptionToggle(q, opt.label));
+        } else {
+          btn.addEventListener('click', () => handleOptionSelect(q, opt.label));
+        }
       }
 
       DOM.optionsList.appendChild(btn);
     });
 
+    // If multi-select and not answered, show Confirm Button below options
+    if (isMulti && !isAnswered) {
+      const confirmContainer = document.createElement('div');
+      confirmContainer.style.cssText = 'display: flex; justify-content: flex-end; margin-top: 10px;';
+      
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'btn btn-primary';
+      confirmBtn.innerHTML = `<i class="fa-solid fa-check-double"></i> Xác Nhận (${currentPending.length}/${q.answer.length} đáp án)`;
+      confirmBtn.disabled = currentPending.length === 0;
+
+      confirmBtn.addEventListener('click', () => {
+        handleConfirmMultiAnswer(q);
+      });
+
+      confirmContainer.appendChild(confirmBtn);
+      DOM.optionsList.appendChild(confirmContainer);
+    }
+
     // Feedback Box
     if (isAnswered) {
-      const isCorrect = q.answer.includes(userAns);
+      const isCorrect = isAnswerCorrect(q, userAns);
       DOM.feedbackBox.style.display = 'flex';
       DOM.feedbackBox.className = `feedback-box ${isCorrect ? 'correct' : 'incorrect'}`;
 
@@ -433,12 +489,58 @@
     highlightActiveGridItem(q.id);
   }
 
-  // Handle Option Click
+  // Single Option Selection
   function handleOptionSelect(question, selectedLabel) {
     if (userState.answers[question.id]) return;
 
     userState.answers[question.id] = selectedLabel;
-    const isCorrect = question.answer.includes(selectedLabel);
+    const isCorrect = isAnswerCorrect(question, selectedLabel);
+
+    if (isCorrect) {
+      userState.streak++;
+      if (userState.streak > userState.maxStreak) {
+        userState.maxStreak = userState.streak;
+      }
+      SoundFX.playCorrect();
+    } else {
+      userState.streak = 0;
+      SoundFX.playWrong();
+    }
+
+    saveState();
+    renderStats();
+    renderPracticeQuestion();
+    renderFilteredMatrix();
+  }
+
+  // Multi Option Toggle
+  function handleMultiOptionToggle(question, label) {
+    if (userState.answers[question.id]) return;
+
+    if (!pendingSelections[question.id]) {
+      pendingSelections[question.id] = [];
+    }
+
+    const list = pendingSelections[question.id];
+    const idx = list.indexOf(label);
+    if (idx > -1) {
+      list.splice(idx, 1);
+    } else {
+      list.push(label);
+    }
+
+    renderPracticeQuestion();
+  }
+
+  // Multi Option Confirm Submission
+  function handleConfirmMultiAnswer(question) {
+    const selected = pendingSelections[question.id] || [];
+    if (selected.length === 0) return;
+
+    userState.answers[question.id] = selected;
+    delete pendingSelections[question.id]; // Clean up pending state after evaluation
+
+    const isCorrect = isAnswerCorrect(question, selected);
 
     if (isCorrect) {
       userState.streak++;
@@ -464,9 +566,12 @@
 
     if (currentIndex >= filteredList.length) currentIndex = 0;
     const q = filteredList[currentIndex];
+    const isMulti = q.answer.length > 1;
 
     DOM.flashcardWrapper.classList.remove('flipped');
-    DOM.flashFrontBadge.textContent = `Câu ${q.id} / ${questions.length}`;
+    let badgeTxt = `Câu ${q.id} / ${questions.length}`;
+    if (isMulti) badgeTxt += ` (Chọn ${q.answer.length} đáp án)`;
+    DOM.flashFrontBadge.textContent = badgeTxt;
     DOM.flashFrontTitle.textContent = q.question;
 
     DOM.flashFrontOptions.innerHTML = '';
@@ -480,8 +585,8 @@
 
     const correctOpts = q.options.filter(opt => q.answer.includes(opt.label));
     DOM.flashBackAnswer.innerHTML = `
-      <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Đáp án đúng</div>
-      <div style="font-size: 22px; font-weight: 800; color: var(--success);">
+      <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Đáp án đúng (${q.answer.length} câu)</div>
+      <div style="font-size: 20px; font-weight: 800; color: var(--success);">
         ${q.answer.join(', ')} - ${correctOpts.map(o => o.text).join('; ')}
       </div>
     `;
@@ -496,7 +601,6 @@
   function renderCongressSummaryView() {
     if (!DOM.congressListContainer || !DOM.congressNavChips) return;
 
-    // Render Quick Nav Chips
     DOM.congressNavChips.innerHTML = '';
     congressSummary.forEach((c) => {
       const chip = document.createElement('button');
@@ -511,23 +615,23 @@
       DOM.congressNavChips.appendChild(chip);
     });
 
-    // Render Congress Cards
     DOM.congressListContainer.innerHTML = '';
     congressSummary.forEach((c) => {
       const card = document.createElement('div');
       card.className = 'congress-card';
       card.id = `congress_card_${c.id}`;
 
-      // Highlights List
       const highlightsHTML = c.highlights.map(h => `<li>${h}</li>`).join('');
 
-      // Questions List
       let qListHTML = '';
       if (c.questions.length > 0) {
-        qListHTML = c.questions.map(q => `
+        qListHTML = c.questions.map(q => {
+          const isMulti = q.answer.length > 1;
+          const multiTag = isMulti ? `<span style="color: var(--warning); font-size: 12px; margin-left: 6px;">[Chọn ${q.answer.length} đáp án]</span>` : '';
+          return `
           <div class="congress-q-item">
             <div class="congress-q-head">
-              <span class="q-number-badge" style="font-size: 12px; padding: 2px 10px;">Câu ${q.id}</span>
+              <span class="q-number-badge" style="font-size: 12px; padding: 2px 10px;">Câu ${q.id} ${multiTag}</span>
               <button class="practice-jump-btn" data-qid="${q.id}">
                 <i class="fa-solid fa-play" style="font-size: 10px;"></i> Luyện câu này
               </button>
@@ -537,7 +641,8 @@
               <i class="fa-solid fa-circle-check"></i> Đáp án đúng (${q.answer.join(', ')}): <strong>${q.answer_text}</strong>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
       } else {
         qListHTML = '<div style="font-size: 13px; color: var(--text-muted); font-style: italic;">Không có câu hỏi trực tiếp trong bộ đề thi.</div>';
       }
@@ -568,10 +673,9 @@
       DOM.congressListContainer.appendChild(card);
     });
 
-    // Attach click listeners for "Luyện câu này" jump buttons
     const jumpBtns = DOM.congressListContainer.querySelectorAll('.practice-jump-btn');
     jumpBtns.forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', () => {
         const qId = parseInt(btn.getAttribute('data-qid'));
         jumpToQuestionId(qId);
       });
@@ -640,18 +744,32 @@
     const q = questions.find(item => item.id === qId);
 
     updateExamTimerUI();
-    DOM.examProgressBadge.textContent = `Câu ${exam.currentIndex + 1} / ${exam.qIds.length}`;
+    const isMulti = q.answer.length > 1;
+    let progressTxt = `Câu ${exam.currentIndex + 1} / ${exam.qIds.length}`;
+    if (isMulti) progressTxt += ` (Chọn ${q.answer.length} đáp án)`;
+
+    DOM.examProgressBadge.textContent = progressTxt;
     DOM.examQTitle.textContent = q.question;
 
-    const currentAns = exam.userAnswers[qId];
+    const currentAns = exam.userAnswers[qId] || [];
+    const currentAnsList = Array.isArray(currentAns) ? currentAns : (currentAns ? [currentAns] : []);
 
     DOM.examOptionsList.innerHTML = '';
     q.options.forEach((opt) => {
+      const isSelected = currentAnsList.includes(opt.label);
       const btn = document.createElement('button');
-      btn.className = `option-btn ${currentAns === opt.label ? 'selected-correct' : ''}`;
+      btn.className = `option-btn ${isSelected ? 'selected-pending' : ''}`;
       btn.innerHTML = `<span class="option-key">${opt.label}</span><span class="option-text">${opt.text}</span>`;
       btn.addEventListener('click', () => {
-        exam.userAnswers[qId] = opt.label;
+        if (isMulti) {
+          let list = [...currentAnsList];
+          const idx = list.indexOf(opt.label);
+          if (idx > -1) list.splice(idx, 1);
+          else list.push(opt.label);
+          exam.userAnswers[qId] = list;
+        } else {
+          exam.userAnswers[qId] = opt.label;
+        }
         saveState();
         renderExamQuestion();
       });
@@ -672,7 +790,7 @@
     exam.qIds.forEach((qId) => {
       const q = questions.find(item => item.id === qId);
       const userAns = exam.userAnswers[qId];
-      if (q && userAns && q.answer.includes(userAns)) {
+      if (q && userAns && isAnswerCorrect(q, userAns)) {
         correctCount++;
         userState.answers[qId] = userAns;
       } else if (q && userAns) {
@@ -690,7 +808,7 @@
     let correctCount = 0;
     exam.qIds.forEach((qId) => {
       const q = questions.find(item => item.id === qId);
-      if (q && exam.userAnswers[qId] && q.answer.includes(exam.userAnswers[qId])) {
+      if (q && exam.userAnswers[qId] && isAnswerCorrect(q, exam.userAnswers[qId])) {
         correctCount++;
       }
     });
@@ -742,7 +860,7 @@
 
       const userAns = userState.answers[q.id];
       if (userAns) {
-        const isCorrect = q.answer.includes(userAns);
+        const isCorrect = isAnswerCorrect(q, userAns);
         item.classList.add(isCorrect ? 'status-correct' : 'status-wrong');
       }
 
@@ -811,13 +929,14 @@
     }, 2500);
   }
 
-  // Reset Progress
+  // Reset Progress (Clears answers, bookmarks, streak, and pending selections!)
   function resetAllProgress() {
     if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử và làm lại từ đầu?')) {
       userState.answers = {};
       userState.bookmarks = [];
       userState.streak = 0;
       userState.maxStreak = 0;
+      pendingSelections = {}; // CLEAR ALL PENDING SELECTIONS!
       saveState();
       renderStats();
       renderFilteredMatrix();
@@ -946,8 +1065,13 @@
         const key = e.key.toUpperCase();
         if (['A', 'B', 'C', 'D'].includes(key)) {
           const filtered = getFilteredQuestions();
-          if (filtered[currentIndex]) {
-            handleOptionSelect(filtered[currentIndex], key);
+          const q = filtered[currentIndex];
+          if (q) {
+            if (q.answer.length > 1) {
+              handleMultiOptionToggle(q, key);
+            } else {
+              handleOptionSelect(q, key);
+            }
           }
         } else if (key === 'S') {
           toggleBookmark();

@@ -429,6 +429,18 @@ body {
 }
 
 /* Option States after Selection */
+.option-btn.selected-pending {
+  background: var(--accent-glow) !important;
+  border-color: var(--accent-primary) !important;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.option-btn.selected-pending .option-key {
+  background: var(--accent-primary);
+  color: #fff;
+  border-color: var(--accent-primary);
+}
+
 .option-btn.selected-correct {
   background: var(--success-bg) !important;
   border-color: var(--success) !important;
