@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VNR202 - Lịch sử Đảng Cộng sản Việt Nam | Ôn Thi Trắc Nghiệm</title>
+  
+  <!-- SEO & Meta -->
+  <meta name="description" content="Trang web học tập & ôn thi trắc nghiệm môn VNR202 - Lịch sử Đảng Cộng sản Việt Nam với 415 câu hỏi có đáp án tức thì, chế độ flashcard và thi thử.">
+  <meta name="keywords" content="VNR202, Lịch sử Đảng, Trắc nghiệm Lịch sử Đảng, Ôn thi VNR202, Quizlet VNR202">
+
+  <!-- Icons & Fonts -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header class="top-header">
+    <div class="logo-group">
+      <div class="logo-icon">V</div>
+      <div class="logo-text">
+        <h1>VNR202 QUIZ</h1>
+        <p>Lịch sử Đảng Cộng sản Việt Nam (415 Câu Hỏi)</p>
+      </div>
+    </div>
+
+    <!-- Navigation Mode Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-tab-btn active" id="navPracticeBtn">
+        <i class="fa-solid fa-graduation-cap"></i> Học Bài
+      </button>
+      <button class="nav-tab-btn" id="navFlashcardBtn">
+        <i class="fa-solid fa-layer-group"></i> Flashcard
+      </button>
+      <button class="nav-tab-btn" id="navExamBtn">
+        <i class="fa-solid fa-stopwatch"></i> Thi Thử
+      </button>
+    </nav>
+
+    <!-- Top Action Tools -->
+    <div class="header-actions">
+      <button class="icon-btn active-icon" id="soundToggleBtn" title="Bật/Tắt âm thanh">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <button class="icon-btn" id="themeToggleBtn" title="Đổi giao diện Sáng/Tối">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="icon-btn" id="resetProgressBtn" title="Làm lại từ đầu">
+        <i class="fa-solid fa-rotate-right"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-wrapper">
+
+    <!-- Statistics Dashboard Bar -->
+    <section class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-total">
+          <i class="fa-solid fa-list-check"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="statTotal">0 / 415</div>
+          <div class="stat-label">Đã Hoàn Thành</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-correct">
+          <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="statCorrect">0</div>
+          <div class="stat-label">Trả Lời Đúng</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-wrong">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="statWrong">0</div>
+          <div class="stat-label">Trả Lời Sai</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-streak">
+          <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="statStreak">🔥 0</div>
+          <div class="stat-label">Chuỗi Đúng (Streak)</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-total">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div class="stat-info">
+          <div class="stat-value" id="statAccuracy">0%</div>
+          <div class="stat-label">Tỷ Lệ Chính Xác</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content Area & Sidebar Grid -->
+    <div class="content-layout">
+
+      <!-- Left Main Panel -->
+      <div class="main-panel">
+
+        <!-- MODE 1: Practice & Immediate Feedback View -->
+        <section id="practiceView" class="question-card-container">
+          <div class="q-header-meta">
+            <span class="q-number-badge" id="qCardBadge">Câu 1 / 415</span>
+            <div class="q-actions-right">
+              <button class="bookmark-btn" id="bookmarkBtn">
+                <i class="fa-regular fa-star"></i> Lưu câu
+              </button>
+            </div>
+          </div>
+
+          <div class="q-title" id="qTitle">Loading question...</div>
+
+          <div class="options-list" id="optionsList">
+            <!-- Options dynamically rendered here -->
+          </div>
+
+          <!-- Immediate Feedback Box -->
+          <div class="feedback-box" id="feedbackBox" style="display: none;"></div>
+
+          <!-- Navigation Footer -->
+          <div class="q-footer-nav">
+            <button class="btn btn-secondary" id="prevQBtn">
+              <i class="fa-solid fa-chevron-left"></i> Câu Trước
+            </button>
+            <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">
+              Mẹo: Phím <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">←</kbd> <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">→</kbd> hoặc phím <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">A</kbd>, <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">B</kbd>, <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">C</kbd>, <kbd style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">D</kbd>
+            </div>
+            <button class="btn btn-primary" id="nextQBtn">
+              Câu Tiếp <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- MODE 2: Flashcard View -->
+        <section id="flashcardView" style="display: none;">
+          <div class="flashcard-wrapper" id="flashcardWrapper">
+            <div class="flashcard-inner">
+
+              <!-- Front Side -->
+              <div class="flashcard-front">
+                <div class="q-header-meta">
+                  <span class="q-number-badge" id="flashFrontBadge">Câu 1 / 415</span>
+                  <span class="card-hint-text"><i class="fa-solid fa-rotate"></i> Click hoặc nhấn Space để lật thẻ</span>
+                </div>
+                <div class="q-title" id="flashFrontTitle" style="font-size: 20px;">Question text...</div>
+                <div class="options-list" id="flashFrontOptions"></div>
+              </div>
+
+              <!-- Back Side -->
+              <div class="flashcard-back">
+                <div class="q-header-meta">
+                  <span style="font-weight: 700; color: var(--success);"><i class="fa-solid fa-circle-check"></i> ĐÁP ÁN ĐÚNG</span>
+                  <span class="card-hint-text"><i class="fa-solid fa-rotate"></i> Click hoặc nhấn Space để lật thẻ lại</span>
+                </div>
+                <div id="flashBackAnswer"></div>
+                <div id="flashBackNotes" style="font-size: 14px; color: var(--text-secondary); font-style: italic;"></div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="q-footer-nav" style="margin-top: 20px;">
+            <button class="btn btn-secondary" id="flashPrevBtn">
+              <i class="fa-solid fa-chevron-left"></i> Thẻ Trước
+            </button>
+            <button class="btn btn-primary" id="flashNextBtn">
+              Thẻ Tiếp <i class="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- MODE 3: Exam View -->
+        <section id="examView" style="display: none;">
+          
+          <!-- Exam Setup -->
+          <div class="exam-setup-card" id="examSetupCard">
+            <i class="fa-solid fa-file-pen" style="font-size: 48px; color: var(--accent-primary);"></i>
+            <h2>Thi Thử Lịch Sử Đảng (VNR202)</h2>
+            <p style="color: var(--text-secondary); max-width: 480px;">
+              Hệ thống sẽ tạo đề thi trắc nghiệm ngẫu nhiên. Kết quả sẽ được chấm sau khi bạn nộp bài.
+            </p>
+
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px;">
+              <label for="examQCountInput" style="font-weight: 600;">Số lượng câu hỏi:</label>
+              <select id="examQCountInput" class="icon-btn" style="width: 120px; font-weight: 700; padding: 0 10px; border-radius: var(--radius-sm);">
+                <option value="20">20 câu</option>
+                <option value="40" selected>40 câu</option>
+                <option value="60">60 câu</option>
+                <option value="100">100 câu</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary" id="startExamBtn" style="padding: 14px 32px; font-size: 16px;">
+              <i class="fa-solid fa-play"></i> Bắt Đầu Làm Bài
+            </button>
+          </div>
+
+          <!-- Active Exam -->
+          <div class="question-card-container" id="examActiveCard" style="display: none;">
+            <div class="q-header-meta">
+              <span class="q-number-badge" id="examProgressBadge">Câu 1 / 40</span>
+              <span class="q-number-badge" id="examTimerBadge" style="background: rgba(239,68,68,0.15); color: var(--danger); border-color: rgba(239,68,68,0.3);">
+                <i class="fa-regular fa-clock"></i> 40:00
+              </span>
+            </div>
+
+            <div class="q-title" id="examQTitle">Exam question...</div>
+            <div class="options-list" id="examOptionsList"></div>
+
+            <div class="q-footer-nav">
+              <button class="btn btn-secondary" id="examPrevBtn">
+                <i class="fa-solid fa-chevron-left"></i> Câu Trước
+              </button>
+              <button class="btn btn-primary" id="submitExamBtn" style="background: var(--success);">
+                <i class="fa-solid fa-paper-plane"></i> Nộp Bài
+              </button>
+              <button class="btn btn-secondary" id="examNextBtn">
+                Câu Tiếp <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Exam Results -->
+          <div class="exam-results-card" id="examResultsCard" style="display: none;">
+            <div class="score-circle">
+              <div class="score-num">0%</div>
+              <div class="score-total">ĐIỂM SỐ</div>
+            </div>
+            <h2>Kết Quả Bài Thi Thử</h2>
+            <div class="exam-summary-text" style="font-size: 16px; color: var(--text-secondary);"></div>
+
+            <button class="btn btn-primary" id="resetExamBtn">
+              <i class="fa-solid fa-rotate-right"></i> Thi Thử Lại
+            </button>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- Right Sidebar: Question Selector & Filter Grid -->
+      <aside class="sidebar-panel">
+
+        <div class="panel-card">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i class="fa-solid fa-grid-2"></i> Danh Sách Câu Hỏi
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted);" id="filteredCountLabel">(415/415)</span>
+          </div>
+
+          <!-- Search Box -->
+          <div class="search-input-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchBox" placeholder="Tìm kiếm nội dung câu hỏi...">
+          </div>
+
+          <!-- Filter Chips -->
+          <div class="filter-chips">
+            <button class="chip-btn active" data-filter="all">Tất cả</button>
+            <button class="chip-btn" data-filter="unanswered">Chưa làm</button>
+            <button class="chip-btn" data-filter="correct">Đã đúng</button>
+            <button class="chip-btn" data-filter="wrong">Câu sai</button>
+            <button class="chip-btn" data-filter="starred">Đã lưu ⭐</button>
+          </div>
+
+          <!-- 415 Questions Grid Matrix -->
+          <div class="q-grid-matrix" id="qGridMatrix">
+            <!-- Dynamic Grid Buttons -->
+          </div>
+        </div>
+
+        <!-- Shortcuts Helper Box -->
+        <div class="panel-card" style="font-size: 13px; color: var(--text-secondary);">
+          <div class="panel-title" style="margin-bottom: 8px;">
+            <i class="fa-solid fa-keyboard"></i> Phím Tắt Nhanh
+          </div>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 6px;">
+            <li><kbd>A</kbd> / <kbd>B</kbd> / <kbd>C</kbd> / <kbd>D</kbd> : Chọn đáp án</li>
+            <li><kbd>←</kbd> / <kbd>→</kbd> : Câu trước / Câu tiếp</li>
+            <li><kbd>S</kbd> : Lưu / Bỏ lưu câu hỏi</li>
+            <li><kbd>Space</kbd> : Lật thẻ Flashcard</li>
+          </ul>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
