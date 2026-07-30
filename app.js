@@ -9,8 +9,9 @@
   const STATE_KEY = 'vnr202_study_state_v1';
 
   let questions = window.QUESTIONS || [];
+  let congressSummary = window.CONGRESS_SUMMARY || [];
   let currentIndex = 0;
-  let currentMode = 'practice'; // 'practice' | 'flashcard' | 'exam'
+  let currentMode = 'practice'; // 'practice' | 'flashcard' | 'congress' | 'exam'
   let filterState = 'all'; // 'all' | 'unanswered' | 'wrong' | 'correct' | 'starred'
   let searchQuery = '';
 
@@ -105,6 +106,7 @@
     resetBtn: document.getElementById('resetProgressBtn'),
     navPracticeBtn: document.getElementById('navPracticeBtn'),
     navFlashcardBtn: document.getElementById('navFlashcardBtn'),
+    navCongressBtn: document.getElementById('navCongressBtn'),
     navExamBtn: document.getElementById('navExamBtn'),
     
     // Stats
@@ -135,6 +137,11 @@
     flashPrevBtn: document.getElementById('flashPrevBtn'),
     flashNextBtn: document.getElementById('flashNextBtn'),
     
+    // Congress Summary View
+    congressView: document.getElementById('congressView'),
+    congressNavChips: document.getElementById('congressNavChips'),
+    congressListContainer: document.getElementById('congressListContainer'),
+
     // Exam View
     examView: document.getElementById('examView'),
     examSetupCard: document.getElementById('examSetupCard'),
@@ -167,6 +174,7 @@
     setupEventListeners();
     renderFilteredMatrix();
     renderCurrentQuestion();
+    renderCongressSummaryView();
   }
 
   // Load state from localStorage
@@ -288,13 +296,36 @@
     currentMode = newMode;
     DOM.navPracticeBtn.classList.toggle('active', currentMode === 'practice');
     DOM.navFlashcardBtn.classList.toggle('active', currentMode === 'flashcard');
+    DOM.navCongressBtn.classList.toggle('active', currentMode === 'congress');
     DOM.navExamBtn.classList.toggle('active', currentMode === 'exam');
 
-    DOM.practiceView.style.display = currentMode === 'practice' ? 'block' : 'none';
+    DOM.practiceView.style.display = currentMode === 'practice' ? 'flex' : 'none';
     DOM.flashcardView.style.display = currentMode === 'flashcard' ? 'block' : 'none';
+    DOM.congressView.style.display = currentMode === 'congress' ? 'flex' : 'none';
     DOM.examView.style.display = currentMode === 'exam' ? 'block' : 'none';
 
     renderCurrentQuestion();
+    if (currentMode === 'congress') {
+      renderCongressSummaryView();
+    }
+  }
+
+  // Jump to specific Question ID in Practice Mode
+  function jumpToQuestionId(qId) {
+    // Reset filters if needed so question is visible
+    filterState = 'all';
+    searchQuery = '';
+    DOM.searchBox.value = '';
+    DOM.filterChips.forEach(c => c.classList.toggle('active', c.getAttribute('data-filter') === 'all'));
+
+    const filtered = getFilteredQuestions();
+    const idx = filtered.findIndex(item => item.id === qId);
+    if (idx !== -1) {
+      currentIndex = idx;
+      switchMode('practice');
+      renderFilteredMatrix();
+      renderCurrentQuestion();
+    }
   }
 
   // Practice View Renderer
@@ -315,7 +346,6 @@
     }
 
     const q = filteredList[currentIndex];
-    const originalIndex = questions.findIndex(item => item.id === q.id) + 1;
 
     // Header & Badge
     DOM.qCardBadge.textContent = `Câu ${q.id} / ${questions.length} (Danh sách lọc: ${currentIndex + 1}/${filteredList.length})`;
@@ -405,7 +435,7 @@
 
   // Handle Option Click
   function handleOptionSelect(question, selectedLabel) {
-    if (userState.answers[question.id]) return; // already answered
+    if (userState.answers[question.id]) return;
 
     userState.answers[question.id] = selectedLabel;
     const isCorrect = question.answer.includes(selectedLabel);
@@ -462,6 +492,92 @@
     DOM.flashNextBtn.disabled = currentIndex === filteredList.length - 1;
   }
 
+  // Congress Summary View Renderer
+  function renderCongressSummaryView() {
+    if (!DOM.congressListContainer || !DOM.congressNavChips) return;
+
+    // Render Quick Nav Chips
+    DOM.congressNavChips.innerHTML = '';
+    congressSummary.forEach((c) => {
+      const chip = document.createElement('button');
+      chip.className = 'chip-btn';
+      chip.textContent = c.badge;
+      chip.addEventListener('click', () => {
+        const el = document.getElementById(`congress_card_${c.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+      DOM.congressNavChips.appendChild(chip);
+    });
+
+    // Render Congress Cards
+    DOM.congressListContainer.innerHTML = '';
+    congressSummary.forEach((c) => {
+      const card = document.createElement('div');
+      card.className = 'congress-card';
+      card.id = `congress_card_${c.id}`;
+
+      // Highlights List
+      const highlightsHTML = c.highlights.map(h => `<li>${h}</li>`).join('');
+
+      // Questions List
+      let qListHTML = '';
+      if (c.questions.length > 0) {
+        qListHTML = c.questions.map(q => `
+          <div class="congress-q-item">
+            <div class="congress-q-head">
+              <span class="q-number-badge" style="font-size: 12px; padding: 2px 10px;">Câu ${q.id}</span>
+              <button class="practice-jump-btn" data-qid="${q.id}">
+                <i class="fa-solid fa-play" style="font-size: 10px;"></i> Luyện câu này
+              </button>
+            </div>
+            <div class="congress-q-text">${q.question}</div>
+            <div class="congress-q-ans">
+              <i class="fa-solid fa-circle-check"></i> Đáp án đúng (${q.answer.join(', ')}): <strong>${q.answer_text}</strong>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        qListHTML = '<div style="font-size: 13px; color: var(--text-muted); font-style: italic;">Không có câu hỏi trực tiếp trong bộ đề thi.</div>';
+      }
+
+      card.innerHTML = `
+        <div class="congress-header">
+          <div class="congress-title-area">
+            <h3>${c.title}</h3>
+            <div class="congress-location"><i class="fa-solid fa-location-dot"></i> ${c.location}</div>
+          </div>
+          <span class="congress-badge">${c.badge}</span>
+        </div>
+
+        <div class="congress-highlights">
+          <div class="congress-highlights-title"><i class="fa-solid fa-lightbulb"></i> Kiến Thức Trọng Tâm</div>
+          <ul>${highlightsHTML}</ul>
+        </div>
+
+        <div class="congress-questions-box">
+          <div style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-top: 6px;">
+            <i class="fa-solid fa-list-check" style="color: var(--accent-primary);"></i> 
+            Các Câu Hỏi Trắc Nghiệm Trong Bộ Đề (${c.questions.length} câu)
+          </div>
+          ${qListHTML}
+        </div>
+      `;
+
+      DOM.congressListContainer.appendChild(card);
+    });
+
+    // Attach click listeners for "Luyện câu này" jump buttons
+    const jumpBtns = DOM.congressListContainer.querySelectorAll('.practice-jump-btn');
+    jumpBtns.forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const qId = parseInt(btn.getAttribute('data-qid'));
+        jumpToQuestionId(qId);
+      });
+    });
+  }
+
   // Render Exam Setup / Active Exam
   function renderExamView() {
     const exam = userState.exam;
@@ -484,7 +600,6 @@
 
   function startExam() {
     const count = parseInt(DOM.examQCountInput.value) || 40;
-    // Shuffle or pick first N
     const shuffled = [...questions].sort(() => 0.5 - Math.random());
     const selectedQ = shuffled.slice(0, Math.min(count, questions.length));
 
@@ -493,7 +608,7 @@
       qIds: selectedQ.map(q => q.id),
       currentIndex: 0,
       userAnswers: {},
-      timeRemaining: Math.min(count * 60, 45 * 60), // 1 min per q, max 45m
+      timeRemaining: Math.min(count * 60, 45 * 60),
       submitted: false
     };
 
@@ -553,14 +668,12 @@
     exam.active = false;
     exam.submitted = true;
 
-    // Calculate score
     let correctCount = 0;
     exam.qIds.forEach((qId) => {
       const q = questions.find(item => item.id === qId);
       const userAns = exam.userAnswers[qId];
       if (q && userAns && q.answer.includes(userAns)) {
         correctCount++;
-        // also save to main practice answers
         userState.answers[qId] = userAns;
       } else if (q && userAns) {
         userState.answers[qId] = userAns;
@@ -612,6 +725,7 @@
   function renderCurrentQuestion() {
     if (currentMode === 'practice') renderPracticeQuestion();
     if (currentMode === 'flashcard') renderFlashcardQuestion();
+    if (currentMode === 'congress') renderCongressSummaryView();
     if (currentMode === 'exam') renderExamView();
   }
 
@@ -643,6 +757,7 @@
 
       item.addEventListener('click', () => {
         currentIndex = index;
+        if (currentMode !== 'practice') switchMode('practice');
         renderCurrentQuestion();
       });
 
@@ -720,6 +835,7 @@
     // Nav Mode Tabs
     DOM.navPracticeBtn.addEventListener('click', () => switchMode('practice'));
     DOM.navFlashcardBtn.addEventListener('click', () => switchMode('flashcard'));
+    DOM.navCongressBtn.addEventListener('click', () => switchMode('congress'));
     DOM.navExamBtn.addEventListener('click', () => switchMode('exam'));
 
     // Practice Nav
@@ -805,7 +921,6 @@
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', (e) => {
-      // Avoid hotkeys when typing in input
       if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
         return;
       }

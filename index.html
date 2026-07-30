@@ -6,8 +6,8 @@
   <title>VNR202 - Lịch sử Đảng Cộng sản Việt Nam | Ôn Thi Trắc Nghiệm</title>
   
   <!-- SEO & Meta -->
-  <meta name="description" content="Trang web học tập & ôn thi trắc nghiệm môn VNR202 - Lịch sử Đảng Cộng sản Việt Nam với 415 câu hỏi có đáp án tức thì, chế độ flashcard và thi thử.">
-  <meta name="keywords" content="VNR202, Lịch sử Đảng, Trắc nghiệm Lịch sử Đảng, Ôn thi VNR202, Quizlet VNR202">
+  <meta name="description" content="Trang web học tập & ôn thi trắc nghiệm môn VNR202 - Lịch sử Đảng Cộng sản Việt Nam với 415 câu hỏi có đáp án tức thì, chế độ flashcard, tổng hợp Đại hội Đảng và thi thử.">
+  <meta name="keywords" content="VNR202, Lịch sử Đảng, Trắc nghiệm Lịch sử Đảng, Ôn thi VNR202, Quizlet VNR202, Các kỳ Đại hội Đảng">
 
   <!-- Icons & Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -32,6 +32,9 @@
       </button>
       <button class="nav-tab-btn" id="navFlashcardBtn">
         <i class="fa-solid fa-layer-group"></i> Flashcard
+      </button>
+      <button class="nav-tab-btn" id="navCongressBtn">
+        <i class="fa-solid fa-landmark"></i> Đại Hội Đảng
       </button>
       <button class="nav-tab-btn" id="navExamBtn">
         <i class="fa-solid fa-stopwatch"></i> Thi Thử
@@ -186,7 +189,36 @@
           </div>
         </section>
 
-        <!-- MODE 3: Exam View -->
+        <!-- MODE 3: Party Congress Knowledge Summary View -->
+        <section id="congressView" style="display: none; flex-direction: column; gap: 20px;">
+          
+          <div class="question-card-container">
+            <div style="display: flex; align-items: center; gap: 14px;">
+              <div class="stat-icon-wrapper stat-icon-total" style="width: 50px; height: 50px; font-size: 24px;">
+                <i class="fa-solid fa-landmark"></i>
+              </div>
+              <div>
+                <h2 style="font-size: 20px; font-weight: 800;">Tổng Hợp Kiến Thức Các Kỳ Đại Hội Đảng</h2>
+                <p style="font-size: 13px; color: var(--text-secondary);">
+                  Tổng hợp kiến thức cốt lõi & câu hỏi trắc nghiệm kèm đáp án đúng của từng kỳ Đại hội Đảng xuất hiện trong bộ đề.
+                </p>
+              </div>
+            </div>
+
+            <!-- Quick Navigation Chips for Congresses -->
+            <div class="filter-chips" id="congressNavChips" style="margin-top: 10px;">
+              <!-- Dynamic Congress Chips -->
+            </div>
+          </div>
+
+          <!-- List of Congress Summary Cards -->
+          <div id="congressListContainer" style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Rendered by app.js -->
+          </div>
+
+        </section>
+
+        <!-- MODE 4: Exam View -->
         <section id="examView" style="display: none;">
           
           <!-- Exam Setup -->
@@ -311,6 +343,7 @@
 
   <!-- Scripts -->
   <script src="data.js"></script>
+  <script src="congress_data.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
